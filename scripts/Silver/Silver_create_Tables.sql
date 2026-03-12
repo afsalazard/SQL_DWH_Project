@@ -43,12 +43,13 @@ begin
 		drop table silver.crm_prd_info
 	create table silver.crm_prd_info(
 		prd_id nvarchar(50),
+		cat_id nvarchar(50),
 		prd_key nvarchar(50),
 		prd_nm nvarchar(50),
 		prd_cost float,
 		prd_line nvarchar(20),
-		prd_start_dt datetime,
-		prd_end_dt datetime,
+		prd_start_dt date,
+		prd_end_dt date,
 		dwh_create_date datetime2 default GETDATE()
 
 		);
