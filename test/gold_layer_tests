@@ -1,0 +1,90 @@
+/* Added SQL tests to validate queries for duplicates and foreign key integrity. */
+	
+--===============================
+-- Check and Validates  Queries
+--===============================
+
+-- Check for duplicates in join processes
+
+use data_warehouse
+select cst_id, count(*) as conteo
+from(
+select 
+	ci.cst_id,
+	ci.cst_key,
+	ci.cst_firstname,
+	ci.cst_lastname,
+	ci.cst_marital_status,
+	ci.cst_gndr,
+	ci.cst_create_date,
+	ca.bdate,
+	ca.gen,
+	la.cntry
+	
+from silver.crm_cust_info ci
+left join silver.erp_cust_az12 ca
+on ci.cst_key = ca.cid
+left join silver.erp_loc_a101 la
+on ci.cst_key = la.cid
+	) t group by cst_id 
+	having count(*) > 1
+
+	-- Data integration ci.cst_gndr ca.gen
+	
+select distinct
+	ci.cst_gndr,
+	ca.gen,
+	case  when ci.cst_gndr != 'N/A' then ci.cst_gndr
+	else	 coalesce(ca.gen,'N/A')
+	end as new_cst_gndr
+from silver.crm_cust_info ci
+left join silver.erp_cust_az12 ca
+on ci.cst_key = ca.cid
+left join silver.erp_loc_a101 la
+on ci.cst_key = la.cid
+
+order by 1,2
+
+-- No existen duplicados al hacer el join
+select prd_key, count(*) as conteo
+from (
+	select 
+	pd.prd_id,
+	pd.prd_key,
+	pd.prd_nm,
+	pd.cat_id,
+	pc.cat,
+	pc.subcat,
+	pc.maintenance,
+	pd.prd_cost,
+	pd.prd_line,
+	pd.prd_start_dt
+
+	from silver.crm_prd_info pd
+
+	left join silver.erp_px_cat_g1v2 pc
+	on pd.cat_id = pc.id
+	where prd_end_dt is null -- filter of product current information
+		) t group by prd_key
+		having count(*)>1
+
+select *
+from silver.erp_px_cat_g1v2
+
+-- Foreign Key Integrity (Dimensions)
+
+-- integrity with dim_customers
+
+select *
+from gold.fact_sales fs
+left join gold.dim_customers dc
+on fs.customer_key = dc.customer_key
+where dc.customer_key is null
+
+-- integrity with dim_products
+
+select *
+from gold.fact_sales fs
+left join gold.dim_products dp
+on fs.product_key = dp.product_key
+where dp.product_key is null
